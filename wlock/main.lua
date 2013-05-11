@@ -92,8 +92,6 @@ function love.update(dt)
 		lock.body:applyForce( 0 , lockSpeed) 
 	end
 	
-
-	
 	
 	world:update(dt) 
 end
