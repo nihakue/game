@@ -31,6 +31,7 @@ function addbullet( x , y , dx , dy)
 	blt.fixture = love.physics.newFixture( blt.body, blt.shape)
 	blt.body:setLinearVelocity( nx*200, ny*200 ) 
 	bulletsOnScreen = bulletsOnScreen + 1 
+	blt.fixture:setUserData('bullet')
 	table.insert(bullets, blt)
 	if bulletsOnScreen == maxBullets then
 		table.remove(bullets, 1)
@@ -55,30 +56,61 @@ end
 
 function love.load()
 	lock = {}
+
+
 	world = love.physics.newWorld ( 0 , 0 ) 
-	
+	world:setCallbacks(beginContact)	
 	lock.body = love.physics.newBody( world , 200 , 200 , "dynamic")
 	lock.shape =  love.physics.newCircleShape( lockSize )
 	lock.fixture = love.physics.newFixture( lock.body , lock.shape ) 
-	
+	lock.fixture:setUserData('lock')	
 	lock.body:setLinearDamping( 2 ) 
 	
 	createPillars()
-	
+	debugText = ""
 	
 	
 	print( lock )
 	
 end
 
+function beginContact(a, b, coll)
+	x,y = coll:getNormal()
+	aUD = a:getUserData()
+	bUD = b:getUserData()
+	debugText = "collision at x: "..x.." y: "..y.." between a: "..a:getUserData().." and b: "..b:getUserData()
+	if aUD == 'bullet' or bUD == 'bullet' then
+		if aUD == 'pillar' or bUD == 'pillar' then
+				anim_explodeBullet(a)	
+				table.remove(bullets, 1)
+				bulletsOnScreen = bulletsOnScreen -1	
+		end
+	end
+end
+--This is a test animation for exploding bullets
+function anim_explodeBullet(bullet)
+--I have to do this because I can only pass a fixture. there's probably a better way to do this
+	debugText = bullet:type()
+	bShape = bullet:getShape()
+	bBody = bullet:getBody()
+
+	explodeSpeed = 10
+	maxSize = 1000
+	x, y = bBody:getX(), bBody:getY()
+	r = bShape:getRadius()
+	repeat
+		--print("x: "..x.." y: "..y.." radius: "..r)
+		love.graphics.circle("fill", x, y, r)
+		r = r + explodeSpeed
+	until r > maxSize
+end
 
 function love.draw()
 	love.graphics.setBackgroundColor( 255 , 50 , 25)
 	drawArena()
 	drawLock()
 	drawPillars()
-	drawBullets()	
-		
+	drawBullets()			
 	dcount = dcount + 1
 	
 	if dcount % 100 == 0 then
@@ -86,7 +118,8 @@ function love.draw()
 	end
 	
 	love.graphics.print( dcount , 0 , 0 )
-	
+	love.graphics.print( debugText, 10, 10)
+	love.graphics.print("Current FPS: "..love.timer.getFPS(), 10, 20)
 --	love.graphics.print( ucount , 0 , 10)	
 	
 end
@@ -144,6 +177,8 @@ function createPillars()
 	pillar.body = love.physics.newBody( world , 300 , 350, "static")
 	pillar.shape =  love.physics.newCircleShape( 20 )
 	pillar.fixture = love.physics.newFixture(pillar.body , pillar.shape) 
+--We set the userdata for collision resolution.
+	pillar.fixture:setUserData('pillar')
 end
 
 function drawPillars()
@@ -151,7 +186,7 @@ function drawPillars()
 	love.graphics.circle("fill", pillar.body:getX(), pillar.body:getY(), pillar.shape:getRadius())
 end
 	
-	
+		
 	
 	
 	
