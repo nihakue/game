@@ -1,20 +1,26 @@
 arenaSize = 300
 dcount = 0
+maxBullets = 5
 
 lockSize = 10
 lockSpeed = 30
+spellRange = 1.5
 
  
 --ucount = 0 
 
-proj = {}
+bullets = {}
+--[[
 for i = 1 , 100 do
 	proj[i] = {}
 end
-projtop = 0
+--]]
+bulletsOnScreen = 0
 
 function addbullet( x , y , dx , dy)
 	blt = {}
+	blt.range = spellRange
+	blt.distanceTraveled = 0
 	mag = math.sqrt((dx - lock.body:getX())^2 + (dy - lock.body:getY())^2)
 	
 	nx = (dx - lock.body:getX()) / mag
@@ -24,17 +30,24 @@ function addbullet( x , y , dx , dy)
 	blt.shape = love.physics.newCircleShape( 3 )
 	blt.fixture = love.physics.newFixture( blt.body, blt.shape)
 	blt.body:setLinearVelocity( nx*200, ny*200 ) 
-	projtop = projtop + 1 
-	proj[projtop] = blt
+	bulletsOnScreen = bulletsOnScreen + 1 
+	table.insert(bullets, blt)
+	if bulletsOnScreen == maxBullets then
+		table.remove(bullets, 1)
+		bulletsOnScreen = bulletsOnScreen - 1
+		
+	end
+	
+	
 end
 	
 	
 	
-function drawproj()
+function drawBullets()
 	love.graphics.setColor( 0 , 0 , 0 ) 
 	
-	for i = 1 , projtop do
-		love.graphics.circle ( "fill" , proj[i].body:getX() , proj[i].body:getY() , 3) 
+	for i, v in ipairs(bullets) do
+		love.graphics.circle ( "fill" , v.body:getX() , v.body:getY() , 3) 
 	end
 end
 
@@ -50,6 +63,9 @@ function love.load()
 	
 	lock.body:setLinearDamping( 2 ) 
 	
+	createPillars()
+	
+	
 	
 	print( lock )
 	
@@ -60,7 +76,8 @@ function love.draw()
 	love.graphics.setBackgroundColor( 255 , 50 , 25)
 	drawArena()
 	drawLock()
-	drawproj()		
+	drawPillars()
+	drawBullets()	
 		
 	dcount = dcount + 1
 	
@@ -69,7 +86,6 @@ function love.draw()
 	end
 	
 	love.graphics.print( dcount , 0 , 0 )
-	
 	
 --	love.graphics.print( ucount , 0 , 10)	
 	
@@ -93,6 +109,15 @@ function love.update(dt)
 	end
 	
 	
+	for i,v in ipairs(bullets) do
+		v.distanceTraveled = v.distanceTraveled + dt
+		if v.distanceTraveled > v.range then
+			table.remove(bullets, i)
+			bulletsOnScreen = bulletsOnScreen -1
+		end
+	end
+	
+	
 	world:update(dt) 
 end
 
@@ -113,3 +138,20 @@ function drawLock()
 	love.graphics.circle ( "fill" , lock.body:getX() , lock.body:getY() , lockSize ) 
 end
 
+function createPillars()
+	pillar = {}
+	
+	pillar.body = love.physics.newBody( world , 300 , 350, "static")
+	pillar.shape =  love.physics.newCircleShape( 20 )
+	pillar.fixture = love.physics.newFixture(pillar.body , pillar.shape) 
+end
+
+function drawPillars()
+	love.graphics.setColor(193, 47, 14) --set the drawing color to red for the ball
+	love.graphics.circle("fill", pillar.body:getX(), pillar.body:getY(), pillar.shape:getRadius())
+end
+	
+	
+	
+	
+	
